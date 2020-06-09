@@ -12,8 +12,16 @@
 
 NSString *const SDLAppName = @"SDLVideo";
 NSString *const SDLAppId = @"2776";
-NSString *const SDLIPAddress = @"192.168.128.103";
-UInt16 const SDLPort = (UInt16)12345;
+
+NSString* const SDLProtocolTypeKey = @"protocolType";
+NSString* const SDLProtocolTypeDefault = @"iap";
+
+NSString* const SDLProtocolIPAddressKey = @"ipAddress";
+NSString* const SDLProtocolIPAddressDefault = @"192.168.128.103";
+
+NSString* const SDLProtocolPortKey = @"port";
+NSString* const SDLProtocolPortDefault = @"12345";
+
 
 BOOL const ShouldRestartOnDisconnect = NO;
 
@@ -69,6 +77,16 @@ NS_ASSUME_NONNULL_BEGIN
     return self;
 }
 
+- (void)startProxy {
+    NSString *protocolType = [self _stringForKey:SDLProtocolTypeKey withDefaultValue:SDLProtocolTypeDefault];
+    if ([protocolType isEqualToString:SDLProtocolTypeDefault]) {
+        [self startIAP];
+    } else {
+        [self startTCP];
+    }
+    
+}
+
 - (void)startIAP {
     [self sdlex_updateProxyState:ProxyStateSearchingForConnection];
 
@@ -95,7 +113,7 @@ NS_ASSUME_NONNULL_BEGIN
     if (self.sdlManager) { return; }
 
     // To stream video, the app type must be "Navigation". Video will not work with other app types.
-    SDLLifecycleConfiguration *lifecycleConfig = [self.class sdlex_setLifecycleConfigurationPropertiesOnConfiguration:[SDLLifecycleConfiguration debugConfigurationWithAppName:SDLAppName fullAppId:SDLAppId ipAddress:SDLIPAddress port:SDLPort]];
+    SDLLifecycleConfiguration *lifecycleConfig = [self.class sdlex_setLifecycleConfigurationPropertiesOnConfiguration:[SDLLifecycleConfiguration debugConfigurationWithAppName:SDLAppName fullAppId:SDLAppId ipAddress:[self _stringForKey:SDLProtocolIPAddressKey withDefaultValue:SDLProtocolIPAddressDefault] port:[[self _stringForKey:SDLProtocolPortKey withDefaultValue:SDLProtocolPortDefault] integerValue]]];
 
     // Navigation apps must have a SDLStreamingMediaConfiguration
     SDLConfiguration *config = [SDLConfiguration configurationWithLifecycle:lifecycleConfig lockScreen:[SDLLockScreenConfiguration enabledConfiguration] logging:[[self class] sdlex_logConfiguration] streamingMedia:[SDLStreamingMediaConfiguration insecureConfiguration] fileManager:[SDLFileManagerConfiguration defaultConfiguration]];
@@ -257,7 +275,7 @@ NS_ASSUME_NONNULL_BEGIN
     
     NSString *audioFilePath = [[NSBundle bundleForClass:[self class]] pathForResource:@"example" ofType:@"mp3"];
     
-    [self.sdlManager.streamManager.audioManager pushWithFileURL:[[NSURL alloc] initFileURLWithPath:audioFilePath] forceInterrupt:false];
+    [self.sdlManager.streamManager.audioManager pushWithFileURL:[[NSURL alloc] initFileURLWithPath:audioFilePath]];
     [self.sdlManager.streamManager.audioManager playNextWhenReady];
 }
 
@@ -268,7 +286,7 @@ NS_ASSUME_NONNULL_BEGIN
     
     NSString *audioFilePath = [[NSBundle bundleForClass:[self class]] pathForResource:@"eine" ofType:@"mp3"];
        
-    [self.sdlManager.streamManager.audioManager pushWithFileURL:[[NSURL alloc] initFileURLWithPath:audioFilePath] forceInterrupt:true];
+    [self.sdlManager.streamManager.audioManager pushWithFileURL:[[NSURL alloc] initFileURLWithPath:audioFilePath]];
     [self.sdlManager.streamManager.audioManager playNextWhenReady];
 }
 /**
@@ -288,6 +306,19 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)sdlex_sendVideo:(CVPixelBufferRef)imageBuffer {
     Boolean success = [self.sdlManager.streamManager sendVideoData:imageBuffer];
     SDLLogD(@"Video was sent %@", success ? @"successfully" : @"unsuccessfully");
+}
+
+- (NSString*)_stringForKey:(NSString*)key withDefaultValue:(NSString*)defaultValue {
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    NSString* stringValue = [userDefaults stringForKey:key];
+    if (!stringValue) {
+        stringValue = defaultValue;
+        [userDefaults setObject:stringValue
+                              forKey:key];
+        [userDefaults synchronize];
+
+    }
+    return stringValue;
 }
 
 @end

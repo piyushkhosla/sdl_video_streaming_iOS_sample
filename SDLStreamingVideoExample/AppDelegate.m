@@ -16,9 +16,8 @@
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-
-//    [[ProxyManager sharedManager] startIAP];
-    [[ProxyManager sharedManager] startTCP];
+  
+    [[ProxyManager sharedManager] startProxy];
 
     return YES;
 }

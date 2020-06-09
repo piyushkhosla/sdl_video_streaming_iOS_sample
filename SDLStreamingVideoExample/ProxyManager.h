@@ -30,8 +30,7 @@ typedef NS_ENUM(NSUInteger, ProxyState) {
 @property (strong, nonatomic) SDLManager *sdlManager;
 
 + (instancetype)sharedManager;
-- (void)startIAP;
-- (void)startTCP;
+- (void)startProxy;
 - (void)reset;
 
 @end
